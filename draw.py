@@ -1,0 +1,242 @@
+from display import *
+from matrix import *
+import math
+
+  # ====================
+  # add the points for a rectagular prism whose 
+  # upper-left corner is (x, y, z) with width, 
+  # height and depth dimensions.
+  # ====================
+def add_box( points, x, y, z, width, height, depth ):
+    ul = [x,y,z]
+    bl = [x, y - height, z]
+    ur = [x + width, y, z]
+    br = [x + width, y - height, z]
+    dul = [x, y, z - depth]
+    dbl = [x, y - height, z - depth]
+    dur = [x + width, y, z - depth]
+    dbr = [x + width, y - height, z - depth] 
+    add_edge(points, ul[0], ul[1], ul[2], ur[0], ur[1], ur[2])
+    add_edge(points, ul[0], ul[1], ul[2], bl[0], bl[1], bl[2])
+    add_edge(points, ur[0], ur[1], ur[2], br[0], br[1], br[2])
+    add_edge(points, bl[0], bl[1], bl[2], br[0], br[1], br[2])
+    add_edge(points, ul[0], ul[1], ul[2], dul[0], dul[1], dul[2])
+    add_edge(points, bl[0], bl[1], bl[2], dbl[0], dbl[1], dbl[2])
+    add_edge(points, ur[0], ur[1], ur[2], dur[0], dur[1], dur[2])
+    add_edge(points, br[0], br[1], br[2], dbr[0], dbr[1], dbr[2])
+    add_edge(points, dur[0], dur[1], dur[2], dbr[0], dbr[1], dbr[2])
+    add_edge(points, dur[0], dur[1], dur[2], dul[0], dul[1], dul[2])
+    add_edge(points, dul[0], dul[1], dul[2], dbl[0], dbl[1], dbl[2])
+    add_edge(points, dbl[0], dbl[1], dbl[2], dbr[0], dbr[1], dbr[2])
+
+  # ====================
+  # Generates all the points along the surface
+  # of a sphere with center (cx, cy, cz) and
+  # radius r.
+  # Returns a matrix of those points
+  # ====================
+def generate_sphere( points, cx, cy, cz, r, step ):
+    edges = new_matrix()
+    for t1 in range(0, 100, int(step * 100)):
+        for t2 in range(0, 50, int(step * 100)):
+            adj_t1 = t1 * step 
+            adj_t2 = t2 * step
+            phi = adj_t1 * 2 * math.pi
+            theta = adj_t2 * 2 * math.pi
+            x0 = (r * math.cos(theta)) + cx
+            y0 = (r * math.sin(theta)*math.cos(phi)) + cy
+            z0 = (r * math.sin(theta) * math.sin(phi)) + cz
+            x1 = x0 + 1
+            y1 = y0 + 1
+            z1 = z0 + 1
+            add_edge(edges, x0, y0, z0, x1, y1, z1)
+    return edges
+
+  # ====================
+  # adds all the points for a sphere with center 
+  # (cx, cy, cz) and radius r to points
+  # should call generate_sphere to create the
+  # necessary points
+  # ====================
+def add_sphere( points, cx, cy, cz, r, step ):
+    edges = generate_sphere(points, cx, cy, cz, r, step)
+
+    for edge in edges:
+        points.append(edge)
+
+  # ====================
+  # Generates all the points along the surface
+  # of a torus with center (cx, cy, cz) and
+  # radii r0 and r1.
+  # Returns a matrix of those points
+  # ====================
+def generate_torus( points, cx, cy, cz, r0, r1, step ):
+    edges = new_matrix()
+    for t1 in range(0, 100, int(step * 100)):
+        for t2 in range(0, 100, int(step * 100)):
+            adj_t1 = t1 * step 
+            adj_t2 = t2 * step
+            phi = adj_t1 * 2 * math.pi
+            theta = adj_t2 * 2 * math.pi
+            x0 = math.cos(phi)*(r0*math.cos(theta) + r1)
+            y0 = r0 * math.sin(theta) + cy
+            z0 = -math.sin(phi) * (r0 * math.cos(theta) + r1) + cz
+            x1 = x0 + 1
+            y1 = y0 + 1
+            z1 = z0 + 1
+            add_edge(edges, x0, y0, z0, x1, y1, z1)
+    return edges
+
+  # ====================
+  # adds all the points for a torus with center
+  # (cx, cy, cz) and radii r0, r1 to points
+  # should call generate_torus to create the
+  # necessary points
+  # ====================
+def add_torus( points, cx, cy, cz, r0, r1, step ):
+    edges = generate_torus(points, cx, cy, cz, r0, r1, step)
+    for edge in edges:
+        points.append(edge)
+
+
+def add_circle( points, cx, cy, cz, r, step ):
+    
+    x_param = lambda t: r * math.cos(t) + cx
+    y_param = lambda t: r * math.sin(t) + cy
+    for t in range(0, 100, int(step * 100)):
+        adj_t = t * step
+        theta = adj_t * 2 * math.pi
+        theta_next = (adj_t + step) * 2 * math.pi
+        x0 = x_param(theta)
+        y0 = y_param(theta)
+        x1 = x_param(theta_next)
+        y1 = y_param(theta_next)
+        z0, z1 = cz,cz
+        add_edge(points, x0, y0, z0, x1, y1, z1)
+
+def add_curve( points, x0, y0, x1, y1, x2, y2, x3, y3, step, curve_type ):
+
+    xcoefs = generate_curve_coefs(x0, x1, x2, x3, curve_type)[0]
+    ycoefs = generate_curve_coefs(y0, y1, y2, y3, curve_type)[0]
+
+    i = 1
+    while i <= step:
+        t = float(i)/step
+        x = t * (t * (xcoefs[0] * t + xcoefs[1]) + xcoefs[2]) + xcoefs[3]
+        y = t * (t * (ycoefs[0] * t + ycoefs[1]) + ycoefs[2]) + ycoefs[3]
+        #x = xcoefs[0] * t*t*t + xcoefs[1] * t*t + xcoefs[2] * t + xcoefs[3]
+        #y = ycoefs[0] * t*t*t + ycoefs[1] * t*t + ycoefs[2] * t + ycoefs[3]
+
+        add_edge(points, x0, y0, 0, x, y, 0)
+        x0 = x
+        y0 = y
+        i+= 1
+
+
+def draw_lines( matrix, screen, color ):
+    if len(matrix) < 2:
+        print('Need at least 2 points to draw')
+        return
+
+    point = 0
+    while point < len(matrix) - 1:
+        draw_line( int(matrix[point][0]),
+                   int(matrix[point][1]),
+                   int(matrix[point+1][0]),
+                   int(matrix[point+1][1]),
+                   screen, color)    
+        point+= 2
+        
+def add_edge( matrix, x0, y0, z0, x1, y1, z1 ):
+    add_point(matrix, x0, y0, z0)
+    add_point(matrix, x1, y1, z1)
+    
+def add_point( matrix, x, y, z=0 ):
+    matrix.append( [x, y, z, 1] )
+    
+
+
+
+def draw_line( x0, y0, x1, y1, screen, color ):
+
+    #swap points if going right -> left
+    if x0 > x1:
+        xt = x0
+        yt = y0
+        x0 = x1
+        y0 = y1
+        x1 = xt
+        y1 = yt
+
+    x = x0
+    y = y0
+    A = 2 * (y1 - y0)
+    B = -2 * (x1 - x0)
+
+    #octants 1 and 8
+    if ( abs(x1-x0) >= abs(y1 - y0) ):
+
+        #octant 1
+        if A > 0:            
+            d = A + B/2
+
+            while x < x1:
+                plot(screen, color, x, y)
+                if d > 0:
+                    y+= 1
+                    d+= B
+                x+= 1
+                d+= A
+            #end octant 1 while
+            plot(screen, color, x1, y1)
+        #end octant 1
+
+        #octant 8
+        else:
+            d = A - B/2
+
+            while x < x1:
+                plot(screen, color, x, y)
+                if d < 0:
+                    y-= 1
+                    d-= B
+                x+= 1
+                d+= A
+            #end octant 8 while
+            plot(screen, color, x1, y1)
+        #end octant 8
+    #end octants 1 and 8
+
+    #octants 2 and 7
+    else:
+        #octant 2
+        if A > 0:
+            d = A/2 + B
+
+            while y < y1:
+                plot(screen, color, x, y)
+                if d < 0:
+                    x+= 1
+                    d+= A
+                y+= 1
+                d+= B
+            #end octant 2 while
+            plot(screen, color, x1, y1)
+        #end octant 2
+
+        #octant 7
+        else:
+            d = A/2 - B;
+
+            while y > y1:
+                plot(screen, color, x, y)
+                if d > 0:
+                    x+= 1
+                    d+= A
+                y-= 1
+                d-= B
+            #end octant 7 while
+            plot(screen, color, x1, y1)
+        #end octant 7
+    #end octants 2 and 7
+#end draw_line
