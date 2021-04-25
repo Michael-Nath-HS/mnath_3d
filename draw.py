@@ -114,23 +114,53 @@ def add_circle( points, cx, cy, cz, r, step ):
         z0, z1 = cz,cz
         add_edge(points, x0, y0, z0, x1, y1, z1)
 
+def add_hermite(matrix, x0, y0, x1, y1, rx0, ry0, rx1, ry1, step):
+    a_x = (2*x0) - (2*x1) + rx0 + rx1
+    a_y = (2*y0) - (2*y1) + ry0 + ry1
+    b_x = (-3 * x0) + (3*x1) - (2 * rx0) - rx1
+    b_y = (-3 * y0) + (3*y1) - (2 * ry0) - ry1
+    c_x = rx0
+    c_y = ry0
+    d_x = x0
+    d_y = y0
+    x_param = lambda t: (a_x * (t ** 3)) + (b_x * (t ** 2)) + (c_x * t) + d_x
+    y_param = lambda t: (a_y * (t ** 3)) + (b_y * (t ** 2)) + (c_y * t) + d_y
+    for t in range(0, 100, int(step * 100)):
+        adj_t = t * step
+        x0 = x_param(adj_t)
+        y0 = y_param(adj_t)
+        x1 = x_param(adj_t + step)
+        y1 = y_param(adj_t + step)
+        z0, z1 = 0, 0
+        add_edge(matrix, x0, y0, z0, x1, y1, z1)
+
+def add_bezier(matrix, x0, y0, x1, y1, x2, y2, x3, y3, step):
+    a_x = -x0 + (3*x1) - (3*x2) + x3
+    a_y = -y0 + (3*y1) - (3*y2) + y3
+    b_x = (3*x0) - (6*x1) + (3*x2)
+    b_y = (3*y0) - (6*y1) + (3*y2)
+    c_x = (-3*x0) + (3*x1)
+    c_y = (-3*y0) + (3*y1)
+    d_x = x0
+    d_y = y0
+    x_param = lambda t: (a_x * (t ** 3)) + (b_x * (t ** 2)) + (c_x * t) + d_x
+    y_param = lambda t: (a_y * (t ** 3)) + (b_y * (t ** 2)) + (c_y * t) + d_y
+    for t in range(0, 100, int(step * 100)):
+        adj_t = t * step
+        x0 = x_param(adj_t)
+        y0 = y_param(adj_t)
+        x1 = x_param(adj_t + step)
+        y1 = y_param(adj_t + step)
+        z0, z1 = 0, 0
+        add_edge(matrix, x0, y0, z0, x1, y1, z1)
+
 def add_curve( points, x0, y0, x1, y1, x2, y2, x3, y3, step, curve_type ):
-
-    xcoefs = generate_curve_coefs(x0, x1, x2, x3, curve_type)[0]
-    ycoefs = generate_curve_coefs(y0, y1, y2, y3, curve_type)[0]
-
-    i = 1
-    while i <= step:
-        t = float(i)/step
-        x = t * (t * (xcoefs[0] * t + xcoefs[1]) + xcoefs[2]) + xcoefs[3]
-        y = t * (t * (ycoefs[0] * t + ycoefs[1]) + ycoefs[2]) + ycoefs[3]
-        #x = xcoefs[0] * t*t*t + xcoefs[1] * t*t + xcoefs[2] * t + xcoefs[3]
-        #y = ycoefs[0] * t*t*t + ycoefs[1] * t*t + ycoefs[2] * t + ycoefs[3]
-
-        add_edge(points, x0, y0, 0, x, y, 0)
-        x0 = x
-        y0 = y
-        i+= 1
+    if curve_type == "bezier":
+        add_bezier(points, x0, y0, x1, y1, x2, y2, x3, y3, step)
+    elif curve_type == "hermite":
+        add_hermite(points, x0, y0, x1, y1, x2, y2, x3, y3, step)
+    else:
+        print(f"unsupported curve type: {curve_type}")
 
 
 def draw_lines( matrix, screen, color ):

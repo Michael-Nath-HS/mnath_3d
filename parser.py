@@ -61,7 +61,6 @@ def parse_file( fname, edges, transform, screen, color ):
         line = lines[c].strip()
         #print ':' + line + ':'
         args = []
-        print(line)
         if line in ARG_COMMANDS:
             c+= 1
             args = lines[c].strip().split(' ')
